@@ -91,6 +91,8 @@ td
 .footer
 {
     font-size: small;
+    position: absolute;
+    bottom: 0px;
 }
 
 .table_centre

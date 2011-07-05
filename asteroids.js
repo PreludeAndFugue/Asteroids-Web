@@ -4,84 +4,77 @@
  * Gary Kerr, 19/11/2010
  ******************************************************************************/
 
-var Asteroids = {
+function Asteroids() {
+    // html5 canvas stuff
+    this.canvas = null;
+    this.context = null;
+    // canvas (game) dims
+    this.WIDTH = 500;
+    this.HEIGHT = 400;
 
-};
- 
-var canvas;
-var context;
+    // the ui menus
+    this.main_menu = null;
+    this.highscore_menu = null;
+    this.pause_menu = null;
+    this.gameover_menu = null;
 
-// the main menu
-var main_menu;
-// the high score menu
-var highscore_menu;
-// the pause menu
-var pause_menu;
-// the game over menu
-var gameover_menu;
+    this.high_scores_table = new Array();
 
-// high scores table - this will be filled in by an XMLHttpRequest
-var high_scores_table = new Array();
+    // asteroid sizes
+    this.sizes = {
+        LARGE: 25,
+        MEDIUM: 12,
+        SMALL: 5
+    };
 
-// canvas dims
-const WIDTH = 500;
-const HEIGHT = 400;
+    // asteroid speeds
+    this.speeds = {
+        LARGE: 3,
+        MEDIUM: 5,
+        SMALL: 6
+    };
 
-// asteroid sizes
-var sizes = {
-    LARGE: 25,
-    MEDIUM: 12,
-    SMALL: 5};
+    // asteroid scores
+    this.scores = {
+        LARGE: 20,
+        MEDIUM: 50,
+        SMALL: 100
+    };
 
-// asteroid speeds
-var speeds = {
-    LARGE: 3,
-    MEDIUM: 5,
-    SMALL: 6};
+    // array of asteroids
+    this.asteroids = null;
 
-// scores for each asteroid size
-var scores = {
-    LARGE: 20,
-    MEDIUM: 50,
-    SMALL: 100};
+    this.ship = null;
+    // array of ship bullets
+    this.bullets = null;
+    this.TOTAL_LIVES = 3;
+    this.lives = this.TOTAL_LIVES;
 
-// an array to hold asteroid instances
-var asteroids;
+    this.level = null;
 
-// the ship
-var ship;
-// number of lives
-var lives;
-// the current level
-var level;
+    var ufo = null;
+    // array of ufo bullets
+    this.bullets_ufo = null;
 
-// the ship's bullets
-var bullets;
-// the ufo's bullets
-var bullets_ufo;
+    // timeout objects (interval IDs - from window.setInterval)
+    this.t = null;
+    this.t_b = null;
 
-// the ufo
-var ufo;
+    // is a game currently in progress
+    this.playing = false;
+    // is the game paused
+    this.paused = false;
 
-// timeout objects (interval IDs - from window.setInterval)
-var t;
-var t_b;
-
-// is a game currently in progress
-var playing = false;
-// is the game paused
-var paused = false;
-
-// the score
-var score;
-
+    // the score
+    this.score = 0;
+}
 
 /*******************************************************************************
  * UFOs - there are two types of ufos.
  *  1. stupid: fire in random direction
  *  2. intelligent: fire at ship
  ******************************************************************************/
-function UFO() {
+Asteroids.prototype.UFO = function(game) {
     if (Math.random() < 0.33) {
         // intelligent ufos are less common
         this.intelligent = true;
@@ -92,9 +85,9 @@ function UFO() {
         this.score = 200;
     }
 
-    // position
+    // initial position
     this.x = -10;
-    this.y = (HEIGHT - 30)*Math.random() + 15;
+    this.y = (game.HEIGHT - 30)*Math.random() + 15;
 
     // velocity
     this.dx = 2.5;
@@ -103,45 +96,45 @@ function UFO() {
         this.x += this.dx;
     };
 
-    this.boundary = function() {
-        if (this.x > WIDTH + 10) {
-            ufo = null;
+    this.boundary = function(game) {
+        if (this.x > game.WIDTH + 10) {
+            game.ufo = null;
             delete this;
         }
     };
-    
+
     // ufo fires bullet
-    this.fire = function() {
+    this.fire = function(game) {
         var rotation = 0;
-    
+
         if (this.intelligent) {
-            if (this.x - ship.x !== 0) {
-                rotation = Math.atan((ship.y - this.y)/(ship.x - this.x));
+            if (this.x - game.ship.x !== 0) {
+                rotation = Math.atan((game.ship.y - this.y)/(game.ship.x - this.x));
             }
         }
         else {
             rotation = 2*Math.PI*Math.random();
         }
-        
-        var b = new Bullet(this.x, this.y, rotation);
-        bullets_ufo.push(b);
+
+        var b = new game.Bullet(this.x, this.y, rotation);
+        game.bullets_ufo.push(b);
     };
-    
+
     // collision with ship bullets
-    this.collision = function() {
-        for (var bullet in bullets) {
-            var dx = this.x - bullets[bullet].x;
-            var dy = this.y - bullets[bullet].y;
+    this.collision = function(game) {
+        for (var bullet in game.bullets) {
+            var dx = this.x - game.bullets[bullet].x;
+            var dy = this.y - game.bullets[bullet].y;
             var dist = Math.sqrt(dx*dx + dy*dy);
-            
+
             //console.debug(dist);
-            
+
             // TODO: fix collision detection method for ufo
             if (dist < 9) {
-                score += this.score;
-                delete bullets[bullet];
+                game.score += this.score;
+                delete game.bullets[bullet];
                 delete this;
-                ufo = null;
+                game.ufo = null;
                 // exit for loop early since ufo is destroyed
                 break;
             }
@@ -150,7 +143,7 @@ function UFO() {
 
     this.draw = function(context) {
         context.save();
-        
+
         context.strokeStyle = "rgb(255, 255, 255)";
         //context.fillStyle = "rgba(200, 200, 100, 0.4)";
         context.translate(this.x, this.y);
@@ -172,22 +165,20 @@ function UFO() {
         context.closePath();
         context.stroke();
         //context.fill();
-        
+
         context.moveTo(-4, -1);
         context.lineTo(0, -4);
         context.lineTo(4, -1);
         context.stroke();
-        
+
         context.restore();
     };
-
-}
+};
 
 /*******************************************************************************
- * Asteroids
+ * Asteroid
  ******************************************************************************/
-function Asteroid(x, y, dx, dy, r)
-{
+Asteroids.prototype.Asteroid = function(x, y, dx, dy, r) {
     // the asteroid's position
     this.x = x;
     this.y = y;
@@ -215,56 +206,57 @@ function Asteroid(x, y, dx, dy, r)
     };
 
     // check for boundary conditions
-    this.boundary = function() {
+    this.boundary = function(game) {
+        //alert(game);
         if (this.x < 0) {
-            this.x = WIDTH;
+            this.x = game.WIDTH;
         }
-        else if (this.x > WIDTH) {
+        else if (this.x > game.WIDTH) {
             this.x = 0;
         }
-        
+
         if (this.y < 0) {
-            this.y = HEIGHT;
+            this.y = game.HEIGHT;
         }
-        else if (this.y > HEIGHT) {
+        else if (this.y > game.HEIGHT) {
             this.y = 0;
         }
     };
 
     // check for collisions
     // TODO: refactor this to remove duplication for bullet arrays
-    this.collision = function() {
+    this.collision = function(game) {
         var bullet, dx, dy, dist;
-    
+
         // check ship bullets
-        for (bullet in bullets) {
-            dx = this.x - bullets[bullet].x;
-            dy = this.y - bullets[bullet].y;
+        for (bullet in game.bullets) {
+            dx = this.x - game.bullets[bullet].x;
+            dy = this.y - game.bullets[bullet].y;
             // the '-2' provides a bit of fuzziness
             dist = dx*dx + dy*dy - 2;
 
             if (dist <= this.r*this.r) {
                 // collision with bullet
-                delete bullets[bullet];
-                this.destroy(1);
+                delete game.bullets[bullet];
+                this.destroy(1, game);
 
                 // this asteroid doesn't exist anymore so quit method before
                 // checking collision with ship;
                 return;
             }
         }
-        
+
         // check ufo bullets
-        for (bullet in bullets_ufo) {
-            dx = this.x - bullets_ufo[bullet].x;
-            dy = this.y - bullets_ufo[bullet].y;
+        for (bullet in game.bullets_ufo) {
+            dx = this.x - game.bullets_ufo[bullet].x;
+            dy = this.y - game.bullets_ufo[bullet].y;
             // the '-2' provides a bit of fuzziness
             dist = dx*dx + dy*dy - 2;
 
             if (dist <= this.r*this.r) {
                 // collision with bullet
-                delete bullets_ufo[bullet];
-                this.destroy(0);
+                delete game.bullets_ufo[bullet];
+                this.destroy(0, game);
 
                 // this asteroid doesn't exist anymore so quit method before
                 // checking collision with ship;
@@ -273,50 +265,49 @@ function Asteroid(x, y, dx, dy, r)
         }
 
         // check collision with ship
-        dx = this.x - ship.x;
-        dy = this.y - ship.y;
+        dx = this.x - game.ship.x;
+        dy = this.y - game.ship.y;
         dist = Math.sqrt(dx*dx + dy*dy);
 
         // 7 is size of ship!! fudge - need to create better way of detecting
         // collision
         if (dist <= this.r + 7) {
-            lives -= 1;
-            ship.reset();
-            this.destroy(1);
+            game.lives -= 1;
+            game.ship.reset(game);
+            this.destroy(1, game);
         }
     };
 
     // destroy asteroid - helper function for this.collision()
     // if scoring is 1 then asteroid was destroyed by ship so increase score,
     // otherwise don't increase score
-    this.destroy = function(scoring) {
-        delete asteroids[asteroids.indexOf(this)];
+    this.destroy = function(scoring, game) {
+        delete game.asteroids[game.asteroids.indexOf(this)];
 
         // create child asteroids and update score
-        if (this.r == sizes.LARGE) {
+        if (this.r == game.sizes.LARGE) {
             // large asteroid creates 2 medium asteroids
-            score += scores.LARGE*scoring;
-            create_asteroids(2, this.x, this.y, sizes.MEDIUM, speeds.MEDIUM);
+            game.score += game.scores.LARGE*scoring;
+            game.create_asteroids(2, this.x, this.y, game.sizes.MEDIUM, game.speeds.MEDIUM);
         }
-        else if (this.r == sizes.MEDIUM) {
+        else if (this.r == game.sizes.MEDIUM) {
             // medium asteroid creates 2 small asteroids
-            score += scores.MEDIUM*scoring;
-            create_asteroids(2, this.x, this.y, sizes.SMALL, speeds.SMALL);
+            game.score += game.scores.MEDIUM*scoring;
+            game.create_asteroids(2, this.x, this.y, game.sizes.SMALL, game.speeds.SMALL);
         }
         else {
-            score += scores.SMALL*scoring;
+            game.score += game.scores.SMALL*scoring;
         }
     };
-}
+};
 
 /*******************************************************************************
  * The ship
  ******************************************************************************/
-function Ship()
-{
+Asteroids.prototype.Ship = function(game) {
     // position
-    this.x = WIDTH/2;
-    this.y = HEIGHT/2;
+    this.x = game.WIDTH/2;
+    this.y = game.HEIGHT/2;
     // velocity
     this.dx = 0;
     this.dy = 0;
@@ -355,9 +346,9 @@ function Ship()
     };
 
     // fire a bullet
-    this.fire = function() {
-        var b = new Bullet(this.x, this.y, this.rotation);
-        bullets.push(b);
+    this.fire = function(game) {
+        var b = new game.Bullet(this.x, this.y, this.rotation);
+        game.bullets.push(b);
     };
 
     // create thrust
@@ -380,52 +371,52 @@ function Ship()
     };
 
     // check for boundary conditions
-    this.boundary = function() {
+    this.boundary = function(game) {
         if (this.x < 0) {
-            this.x = WIDTH;
+            this.x = game.WIDTH;
         }
-        else if (this.x > WIDTH) {
+        else if (this.x > game.WIDTH) {
             this.x = 0;
         }
 
         if (this.y < 0) {
-            this.y = HEIGHT;
+            this.y = game.HEIGHT;
         }
-        else if (this.y > HEIGHT) {
+        else if (this.y > game.HEIGHT) {
             this.y = 0;
         }
     };
-    
+
     // check collision with ufo bullets
-    this.collision = function() {
-        for (var bullet in bullets_ufo) {
-            var dx = this.x - bullets_ufo[bullet].x;
-            var dy = this.y - bullets_ufo[bullet].y;
+    this.collision = function(game) {
+        for (var bullet in game.bullets_ufo) {
+            var dx = this.x - game.bullets_ufo[bullet].x;
+            var dy = this.y - game.bullets_ufo[bullet].y;
             var dist = Math.sqrt(dx*dx + dy*dy);
             // TODO: fix ship collision detection
             // 7 is size of ship!
             if (dist < 7) {
-                lives -= 1;
-                ship.reset();
-                delete bullets_ufo[bullet];
+                game.lives -= 1;
+                this.reset(game);
+                delete game.bullets_ufo[bullet];
             }
         }
     };
 
     // reset the ship to the centre of the screen
-    this.reset = function() {
-        this.x = WIDTH/2;
-        this.y = HEIGHT/2;
+    this.reset = function(game) {
+        this.x = game.WIDTH/2;
+        this.y = game.HEIGHT/2;
         this.dx = 0;
         this.dy = 0;
         this.rotation = -Math.PI/2;
     };
-}
+};
 
 /*******************************************************************************
  * Bullets
  ******************************************************************************/
-function Bullet(x, y, rotation) {
+Asteroids.prototype.Bullet = function(x, y, rotation) {
     // velocity
     this.dx = 4*Math.cos(rotation);
     this.dy = 4*Math.sin(rotation);
@@ -450,30 +441,31 @@ function Bullet(x, y, rotation) {
     };
 
     // check for boundary conditions
-    this.boundary = function() {
+    this.boundary = function(game) {
         if (this.x < 0) {
-            this.x = WIDTH;
+            this.x = game.WIDTH;
         }
-        else if (this.x > WIDTH) {
+        else if (this.x > game.WIDTH) {
             this.x = 0;
         }
 
         if (this.y < 0) {
-            this.y = HEIGHT;
+            this.y = game.HEIGHT;
         }
-        else if (this.y > HEIGHT) {
+        else if (this.y > game.HEIGHT) {
             this.y = 0;
         }
     };
-}
+};
 
 /*******************************************************************************
  * loader - initialise the game when the html is loaded.
  ******************************************************************************/
-function loader() {
+Asteroids.prototype.loader = function() {
+    var this_ast = this;
     // create high_scores_table from XMLHttpRequest
     var xhr = new XMLHttpRequest();
-            
+
     xhr.onreadystatechange = function() {
         if (xhr.readyState == 4 && xhr.status == 200) {
             // items is array of strings - each string contains name & score
@@ -482,110 +474,129 @@ function loader() {
             for (var i = 0; i < items.length; i++) {
                 // create array - name & score
                 var score_split = items[i].split("\t");
-                high_scores_table[i + 1] = {name: score_split[0],
+                //alert(this);
+                this_ast.high_scores_table[i + 1] = {name: score_split[0],
                                         score: parseInt(score_split[1], 10)};
             }
         }
     };
-    
+
     xhr.open("GET", "asteroids.txt", true);
     // this line to stop browser caching
-    xhr.setRequestHeader("If-Modified-Since", "Sat, 20 Nov 2010 00:00:00 GMT");
+    //xhr.setRequestHeader("If-Unmodified-Since", "Mon, 4 Jul 2011 23:00:00 GMT");
+    xhr.setRequestHeader('Cache-Control', 'no-cache');
     xhr.send();
 
     // initialise the canvas
-    canvas = document.getElementById("canvas");
-    canvas.width = WIDTH;
-    canvas.height = HEIGHT;
+    this.canvas = document.getElementById("canvas");
+    this.canvas.width = this.WIDTH;
+    this.canvas.height = this.HEIGHT;
 
     // initialise the context object
-    context = canvas.getContext('2d');
+    this.context = this.canvas.getContext('2d');
 
     // menus
-    main_menu = document.getElementById("main");
-    highscore_menu = document.getElementById("high");
-    pause_menu = document.getElementById("pause");
-    gameover_menu = document.getElementById("gameover");
+    this.main_menu = document.getElementById("main");
+    this.highscore_menu = document.getElementById("high");
+    this.pause_menu = document.getElementById("pause");
+    this.gameover_menu = document.getElementById("gameover");
 
-    main();
-}
+    // add event listeners
+    var docel = document.getElementById;
+    window.addEventListener('keydown', function(event) {this_ast.keydown(event);}, false);
+    document.getElementById('highscoretable').addEventListener('click',
+        function() {this_ast.high_scores();}, false);
+    document.getElementById('startbutton').addEventListener('click',
+        function() {this_ast.go();}, false);
+    document.getElementById('highscorereturn').addEventListener('click',
+        function() {this_ast.display_menus(10, -10, -10, -10);}, false);
+    document.getElementById('newscorebutton').addEventListener('click',
+        function() {this_ast.new_high_score();}, false);
+    document.getElementById('noscorebutton').addEventListener('click',
+        function() {this_ast.main();}, false);
+
+    this.main();
+};
 
 /*******************************************************************************
  * main - show main menu and animate background
  ******************************************************************************/
-function main() {
+Asteroids.prototype.main = function() {
+    var this_ast = this;
     // display the main menu
-    display_menus(10, -10, -10, -10);
+    this.display_menus(10, -10, -10, -10);
 
     // asteroids for the background animation
-    asteroids = new Array();
-    create_asteroids(4, null, null, sizes.LARGE, speeds.LARGE);
-    create_asteroids(4, null, null, sizes.MEDIUM, speeds.MEDIUM);
-    create_asteroids(6, null, null, sizes.SMALL, speeds.SMALL);
+    this.asteroids = new Array();
+    this.create_asteroids(4, null, null, this.sizes.LARGE, this.speeds.LARGE);
+    this.create_asteroids(4, null, null, this.sizes.MEDIUM, this.speeds.MEDIUM);
+    this.create_asteroids(6, null, null, this.sizes.SMALL, this.speeds.SMALL);
 
     // start background animation
-    if (!t_b) {
-        t_b = window.setInterval(animate_background, 50);
+    if (!this.t_b) {
+        this.t_b = window.setInterval(function() {this_ast.animate_background();}, 50);
     }
-}
+};
 
 /*******************************************************************************
  * high_scores - update the html high score table
  ******************************************************************************/
-function high_scores() {
+Asteroids.prototype.high_scores = function() {
     for (var i = 1; i <= 8; i++) {
-        document.getElementById("name" + i).innerHTML = high_scores_table[i]["name"];
-        document.getElementById("score" + i).innerHTML = high_scores_table[i]["score"];
+        document.getElementById("name" + i).innerHTML = this.high_scores_table[i]["name"];
+        document.getElementById("score" + i).innerHTML = this.high_scores_table[i]["score"];
     }
 
     // display the high score menu
-    display_menus(-10, 10, -10, -10);
-}
+    this.display_menus(-10, 10, -10, -10);
+};
 
 /*******************************************************************************
  * new_high_score - update the high score table
  ******************************************************************************/
-function new_high_score() {
-    var new_score = score;
+Asteroids.prototype.new_high_score = function() {
+    var new_score = this.score;
     var new_name = document.getElementById("name").value;
-    
+
     for (var i = 1; i <= 8; i++) {
-        if (new_score > high_scores_table[i].score ||
-                (new_score < score && new_score >= high_scores_table[i].score)) {
+        if (new_score > this.high_scores_table[i].score ||
+                (new_score < this.score && new_score >= this.high_scores_table[i].score)) {
             // keep a record of current score and name in temp vars
-            var temp_score = high_scores_table[i].score;
-            var temp_name = high_scores_table[i].name;
-            
+            var temp_score = this.high_scores_table[i].score;
+            var temp_name = this.high_scores_table[i].name;
+
             // replace with new values
-            high_scores_table[i].name = new_name;
-            high_scores_table[i].score = new_score;
-            
+            this.high_scores_table[i].name = new_name;
+            this.high_scores_table[i].score = new_score;
+
             // transfer temp vars
             new_name = temp_name;
             new_score = temp_score;
         }
     }
-    
-    main();
-}
+
+    this.main();
+};
 
 /*******************************************************************************
  * game_over - display the game over menu at the end of a game
  ******************************************************************************/
-function game_over() {
+Asteroids.prototype.game_over = function() {
+    var this_ast = this;
+
     // clear game loop
-    window.clearInterval(t);
+    window.clearInterval(this_ast.t);
 
     // start background animation
-    t_b = window.setInterval(animate_background, 50);
+    this.t_b = window.setInterval(function() {this_ast.animate_background();}, 50);
 
     // set the score
-    document.getElementById("score").innerHTML = score;
-    
+    document.getElementById("score").innerHTML = this.score;
+
     // current 8th position score
-    var score8 = high_scores_table[8].score;
-    
-    if (score > score8) {
+    var score8 = this.high_scores_table[8].score;
+
+    if (this.score > score8) {
         // new score in high score table
         document.getElementById("newhighscore").style.display = "block";
         document.getElementById("nohighscore").style.display = "none";
@@ -597,174 +608,175 @@ function game_over() {
     }
 
     // display the game over menu
-    display_menus(-10, -10, -10, 10);
-}
+    this.display_menus(-10, -10, -10, 10);
+};
 
 /*******************************************************************************
  * go - starts the game
  ******************************************************************************/
-function go() {
+Asteroids.prototype.go = function() {
+    var this_ast = this;
+
     // hide the menus
-    display_menus(-10, -10, -10, -10);
+    this.display_menus(-10, -10, -10, -10);
 
     // stop the background animation
-    window.clearInterval(t_b);
-    t_b = null;
+    window.clearInterval(this.t_b);
+    this.t_b = null;
 
     // create the ship
-    ship = new Ship();
+    this.ship = new this.Ship(this);
 
     // the bullets arrays
-    bullets = new Array();
-    bullets_ufo = new Array();
+    this.bullets = new Array();
+    this.bullets_ufo = new Array();
 
     // reset the score
-    score = 0;
+    this.score = 0;
 
     // reset the number of lives
-    lives = 3;
+    this.lives = 3;
 
     // reset the level (level is the number of asteroids to create 4 - 12)
-    level = 4;
+    this.level = 4;
 
     // empty the asteroids array before starting
-    asteroids = new Array();
+    this.asteroids = new Array();
 
     // create the asteroids
-    create_asteroids(level, null, null, sizes.LARGE, speeds.LARGE);
+    this.create_asteroids(this.level, null, null, this.sizes.LARGE, this.speeds.LARGE);
 
-    ufo = null;
+    this.ufo = null;
 
-    if (!playing) {
-        playing = true;
-        t = window.setInterval(play, 30);
+    if (!this.playing) {
+        this.playing = true;
+        this.t = window.setInterval(function() {this_ast.play();}, 30);
     }
-}
+};
 
 /*******************************************************************************
  * play - play the game, the main loop
  ******************************************************************************/
-function play() {
+Asteroids.prototype.play = function() {
     var bullet, ast;
 
     // clear the canvas
-    context.fillStyle = "rgb(0, 0, 0)";
-    context.fillRect(0, 0, WIDTH, HEIGHT);
+    this.context.fillStyle = "rgb(0, 0, 0)";
+    this.context.fillRect(0, 0, this.WIDTH, this.HEIGHT);
 
     // remove old bullets
-    bullets = bullets.filter(function(el, ind, arr) {return el.age < 65;});
-    bullets_ufo = bullets_ufo.filter(function(el, ind, arr) {return el.age < 55;});
+    this.bullets = this.bullets.filter(function(el, ind, arr) {return el.age < 65;});
+    this.bullets_ufo = this.bullets_ufo.filter(function(el, ind, arr) {return el.age < 55;});
 
     // draw bullets
-    for (bullet in bullets) {
-        bullets[bullet].move();
-        bullets[bullet].boundary();
-        bullets[bullet].draw(context);
+    for (bullet in this.bullets) {
+        this.bullets[bullet].move();
+        this.bullets[bullet].boundary(this);
+        this.bullets[bullet].draw(this.context);
     }
-    
+
     // draw ufo bullets
-    for (bullet in bullets_ufo) {
-        bullets_ufo[bullet].move();
-        bullets_ufo[bullet].boundary();
-        bullets_ufo[bullet].draw(context);
+    for (bullet in this.bullets_ufo) {
+        this.bullets_ufo[bullet].move();
+        this.bullets_ufo[bullet].boundary(this);
+        this.bullets_ufo[bullet].draw(this.context);
     }
 
     // deal with ufos
-    if (ufo) {
-        ufo.draw(context);
+    if (this.ufo) {
+        this.ufo.draw(this.context);
         // only fire 2% of the time
         if (Math.random() < 0.02) {
-            ufo.fire();
+            this.ufo.fire(this);
         }
-        ufo.move();
-        ufo.collision();
+        this.ufo.move();
+        this.ufo.collision(this);
         // ufo may be destroyed by collision
-        if (ufo) {
-            ufo.boundary();
+        if (this.ufo) {
+            this.ufo.boundary(this);
         }
     }
-    else if (Math.random() < 0.001) {
+    else if (Math.random() < 0.002) {
         // create a ufo once every 500 frames - approx 25s.
-        ufo = new UFO();
+        this.ufo = new this.UFO(this);
     }
 
     // remove dead asteroids from array
-    asteroids = asteroids.filter(function(el, ind, arr) {return el;});
+    this.asteroids = this.asteroids.filter(function(el, ind, arr) {return el;});
 
     // draw asteroids
-    for (ast in asteroids) {
-        asteroids[ast].draw(context);
-        asteroids[ast].move();
-        asteroids[ast].boundary();
-        asteroids[ast].collision();
+    for (ast in this.asteroids) {
+        this.asteroids[ast].draw(this.context);
+        this.asteroids[ast].move();
+        this.asteroids[ast].boundary(this);
+        this.asteroids[ast].collision(this);
         //asteroids[ast].draw(context);
     }
 
     // move and draw the ship
-    ship.move(context);
-    ship.boundary();
-    ship.collision();
-    ship.draw(context);
+    this.ship.move();
+    this.ship.boundary(this);
+    this.ship.collision(this);
+    this.ship.draw(this.context);
 
     // draw the score
-    draw_score(context);
+    this.draw_score(this.context);
 
     // check for end of level
-    if (asteroids.length === 0) {
-        level++;
+    if (this.asteroids.length === 0) {
+        this.level++;
         // maximum difficulty level is 12
-        if (level > 12) {
-            level = 12;
+        if (this.level > 12) {
+            this.level = 12;
         }
-        
+
         // create asteroids for new level
-        create_asteroids(level, null, null, sizes.LARGE, speeds.LARGE);
+        this.create_asteroids(this.level, null, null, this.sizes.LARGE, this.speeds.LARGE);
     }
 
     // check if game over
-    if (lives <= 0) {
-        playing = false;
-        game_over();
+    if (this.lives <= 0) {
+        this.playing = false;
+        this.game_over();
     }
-}
+};
 
 /*******************************************************************************
  * animate_background - draw some asteroids on the canvas when the menus are
  * being displayed
  ******************************************************************************/
-function animate_background()
-{
+Asteroids.prototype.animate_background = function() {
     // clear the canvas
-    context.fillStyle = "rgb(0, 0, 0)";
-    context.fillRect(0, 0, WIDTH, HEIGHT);
+    this.context.fillStyle = "rgb(0, 0, 0)";
+    this.context.fillRect(0, 0, this.WIDTH, this.HEIGHT);
 
     // move the asteroids
-    for (var ast in asteroids) {
-        asteroids[ast].draw(context);
-        asteroids[ast].move();
-        asteroids[ast].boundary();
+    for (var ast in this.asteroids) {
+        this.asteroids[ast].draw(this.context);
+        this.asteroids[ast].move();
+        this.asteroids[ast].boundary(this);
     }
-}
+};
 
 /*******************************************************************************
  * create_asteroids - helper function to create n asteroids with radius r at
  * location (x_in, y_in). If location not specified, then random locations
  * are chosen.
  ******************************************************************************/
-function create_asteroids(n, x_in, y_in, r, speed)
+Asteroids.prototype.create_asteroids = function(n, x_in, y_in, r, speed)
 {
     var create_coords = x_in ? false : true;
 
     for (var i = 0; i < n; i++) {
         if (create_coords) {
-            x_in = Math.floor(WIDTH*Math.random()/2 - WIDTH/4);
+            x_in = Math.floor(this.WIDTH*Math.random()/2 - this.WIDTH/4);
             if (x_in < 0) {
-                x_in += WIDTH;
+                x_in += this.WIDTH;
             }
 
-            y_in = Math.floor(HEIGHT*Math.random()/2 - HEIGHT/4);
+            y_in = Math.floor(this.HEIGHT*Math.random()/2 - this.HEIGHT/4);
             if (y_in < 0) {
-                y_in += HEIGHT;
+                y_in += this.HEIGHT;
             }
         }
         var x = x_in;
@@ -773,18 +785,18 @@ function create_asteroids(n, x_in, y_in, r, speed)
         var dx = speed*(Math.random() - 0.5);
         var dy = speed*(Math.random() - 0.5);
 
-        asteroids.push(new Asteroid(x, y, dx, dy, r));
+        this.asteroids.push(new this.Asteroid(x, y, dx, dy, r));
     }
-}
+};
 
 /*******************************************************************************
  * draw_score - writes the score on the canvas
  ******************************************************************************/
-function draw_score(context) {
+Asteroids.prototype.draw_score = function(context) {
     context.fillStyle = "rgb(255, 255, 255)";
     context.font = "11pt Verdana";
     context.textAlign = "right";
-    context.fillText(score, WIDTH/2, 30);
+    context.fillText(this.score, this.WIDTH/2, 30);
 
     // draw the number of lives remaining
     context.save();
@@ -799,23 +811,24 @@ function draw_score(context) {
     context.stroke();
     context.restore();
 
-    context.fillText("x " + lives, 57, 30);
-}
+    context.fillText("x " + this.lives, 57, 30);
+};
 
 /*******************************************************************************
  * display_menus: change the zIndex of menus
  ******************************************************************************/
-function display_menus(main, high, pause, gameover) {
-    highscore_menu.style.zIndex = high;
-    main_menu.style.zIndex = main;
-    pause_menu.style.zIndex = pause;
-    gameover_menu.style.zIndex = gameover;
-}
+Asteroids.prototype.display_menus = function(main, high, pause, gameover) {
+    this.highscore_menu.style.zIndex = high;
+    this.main_menu.style.zIndex = main;
+    this.pause_menu.style.zIndex = pause;
+    this.gameover_menu.style.zIndex = gameover;
+};
 
 /*******************************************************************************
  * keydown - react to key presses
  ******************************************************************************/
-function keydown(event) {
+Asteroids.prototype.keydown = function(event) {
+    var this_ast = this;
     var keynum = event.which;
 
     //alert(keynum);
@@ -823,44 +836,42 @@ function keydown(event) {
     switch (keynum) {
         case 37:
             // left arrow
-            ship.rotate(false);
+            this.ship.rotate(false);
             break;
         case 39:
             // right arrow
-            ship.rotate(true);
+            this.ship.rotate(true);
             break;
         case 40:
             // down arrow - fire
-            ship.fire();
+            this.ship.fire(this);
             break;
         case 38:
             // up arrow - thrust
-            ship.thrust();
+            this.ship.thrust();
             break;
         case 65:
             // 'a' key - pause
-            if (playing) {
-                if (!paused) {
-                    paused = true;
-                    window.clearInterval(t);
-                    display_menus(-10, -10, 10, -10);
+            if (this.playing) {
+                if (!this.paused) {
+                    this.paused = true;
+                    window.clearInterval(this.t);
+                    this.display_menus(-10, -10, 10, -10);
                 }
                 else {
-                    paused = false;
-                    t = window.setInterval(play, 50);
-                    display_menus(-10, -10, -10, -10);
+                    this.paused = false;
+                    this.t = window.setInterval(function() {this_ast.play();}, 50);
+                    this.display_menus(-10, -10, -10, -10);
                 }
             }
             break;
         case 79:
             // 'o' key - quit game
-            if (playing) {
-                playing = false;
-                window.clearInterval(t);
-                main();
+            if (this.playing) {
+                this.playing = false;
+                window.clearInterval(this.t);
+                this.main();
             }
-            break;
-        default:
             break;
         /*
         case 49:
@@ -872,5 +883,14 @@ function keydown(event) {
             ufo.intelligent = true;
             break;
         */
+        default:
+            break;
     }
-}
+};
+
+window.addEventListener(
+    'load',
+    function() {
+        var ast = new Asteroids();
+        ast.loader();},
+    false);

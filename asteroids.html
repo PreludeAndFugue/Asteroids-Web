@@ -4,22 +4,22 @@
     <meta charset="utf-8" />
     <title>HTML5: Asteroids</title>
     <link rel="stylesheet" type="text/css" href="asteroids.css" />
-    
+
     <script type="text/javascript" src="asteroids.js" charset="utf-8">
     </script>
 </head>
-    <body onload="loader();" onkeydown="keydown(event);">
-        <h1>Asteroids - HTML5</h1>
-        
+    <body>
+        <h1>Asteroids - HTML5 Canvas</h1>
+
         <div class="footer">
-        <p>Tested in Firefox 3.6, Chrome 7.0, and Safari 5.0</p>
+        <p>Tested in Firefox 5, Chrome 7.0, and Safari 5.0</p>
         </div>
-        
+
         <div id="game">
             <canvas id="canvas">
-            your browser does not support HTML5 Canvas.
+                Your browser does not support HTML5 Canvas.
             </canvas>
-            
+
             <div id="main">
                 <h1>Asteroids</h1>
                 <h2>Instructions</h2>
@@ -31,16 +31,16 @@
                     <li>Pause: A</li>
                     <li>Quit: O</li>
                 </ul>
-                
-                
+
+
                 <form>
                 <div class="centre">
-                <input type="button" value="Start" onclick="go();" />
-                <input type="button" value="High Scores" onclick="high_scores();" />
+                <input id="startbutton" type="button" value="Start" />
+                <input id="highscoretable" type="button" value="High Scores" />
                 </div>
                 </form>
             </div>
-            
+
             <div id="high">
                 <h1>High Scores</h1>
                 <table class="table_centre">
@@ -72,41 +72,41 @@
                         <td>8</td><td id="name8">---</td><td id="score8">0000000</td>
                     </tr>
                 </table>
-                
+
                 <form>
                 <div class="centre">
-                <input type="button" value="Return" onclick="display_menus(10, -10, -10, -10);" />
+                <input id="highscorereturn" type="button" value="Return" />
                 </div>
                 </form>
             </div>
-            
+
             <div id="pause">
                 <h1>Pause</h1>
             </div>
-            
+
             <div id="gameover">
                 <h1>Game Over</h1>
                 <h2 id="score"></h2>
-                
+
                 <div id="newhighscore">
                     <p>You've acheived a new high score.</p>
                     <form>
                         <label for="name">Enter name</label>
                         <input id="name" type="text" size="3" maxlength="3" />
                         <br />
-                        <input type="button" value="OK" onclick="new_high_score();" />
+                        <input id="newscorebutton" type="button" value="OK" />
                     </form>
                 </div>
-                
+
                 <div id="nohighscore">
                     <form>
                     <div class="centre">
-                    <input type="button" value="OK" onclick="main();" />
+                    <input id="noscorebutton" type="button" value="OK" />
                     </div>
                     </form>
                 </div>
             </div>
-            
+
         </div>
 
     </body>

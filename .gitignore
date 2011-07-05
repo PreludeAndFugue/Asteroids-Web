@@ -1,3 +1,7 @@
 asteroids.php
 jsl.exe
 jsl.conf
+# ignore db file created by SCons
+*.dblite
+# ignore bin dir
+bin/*
