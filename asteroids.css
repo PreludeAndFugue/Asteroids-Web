@@ -1,0 +1,100 @@
+body
+{
+    font-family: sans-serif;
+    background-color: #cccccc;
+}
+
+h1
+{
+    text-align: center;
+}
+
+canvas
+{
+    border: 8px solid #bb33bb;
+    background-color: #000000;
+}
+
+li
+{
+    text-align: left;
+}
+
+td
+{
+    padding: 2px;
+    width: 6em;
+    text-align: center;
+}
+
+#game
+{
+    position: absolute;
+    left: 50%;
+    margin-left: -258px;
+    text-align: center;
+    width: 516px;
+    height: 416px;
+}
+
+#main, #high, #pause, #gameover
+{
+    padding: 10px;
+    background-color: rgba(0, 0, 0, 0.6);
+    color: #ffffff;
+    width: 330px;
+    height: 345px;
+    position: absolute;
+    left: 78px;
+    top: 21px;
+}
+
+#main
+{
+    border: 4px solid #33ff88;
+    z-index: 10;
+}
+
+#high
+{
+    border: 4px solid #7733ff;
+    z-index: -10;
+}
+
+#pause
+{
+    border: 4px solid #ccff22;
+    z-index: -10;
+}
+
+#gameover
+{
+    border: 4px solid #4466ff;
+    z-index: -10;
+}
+
+#newhighscore
+{
+    display: none;
+}
+
+#nohighscore
+{
+    display: block;
+}
+
+.centre
+{
+    text-align: center;
+}
+
+.footer
+{
+    font-size: small;
+}
+
+.table_centre
+{
+    margin-left: auto;
+    margin-right: auto;
+}

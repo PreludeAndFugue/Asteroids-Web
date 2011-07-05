@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>HTML5: Asteroids</title>
+    <link rel="stylesheet" type="text/css" href="asteroids.css" />
+    
+    <script type="text/javascript" src="asteroids.js" charset="utf-8">
+    </script>
+</head>
+    <body onload="loader();" onkeydown="keydown(event);">
+        <h1>Asteroids - HTML5</h1>
+        
+        <div class="footer">
+        <p>Tested in Firefox 3.6, Chrome 7.0, and Safari 5.0</p>
+        </div>
+        
+        <div id="game">
+            <canvas id="canvas">
+            your browser does not support HTML5 Canvas.
+            </canvas>
+            
+            <div id="main">
+                <h1>Asteroids</h1>
+                <h2>Instructions</h2>
+                <ul>
+                    <li>Rotate clockwise: right arrow key.</li>
+                    <li>Rotate anti-clockwise: left arrow key.</li>
+                    <li>Thrust: up arrow key</li>
+                    <li>Fire: down arrow key</li>
+                    <li>Pause: A</li>
+                    <li>Quit: O</li>
+                </ul>
+                
+                
+                <form>
+                <div class="centre">
+                <input type="button" value="Start" onclick="go();" />
+                <input type="button" value="High Scores" onclick="high_scores();" />
+                </div>
+                </form>
+            </div>
+            
+            <div id="high">
+                <h1>High Scores</h1>
+                <table class="table_centre">
+                    <tr>
+                        <th>Position</th><th>Name</th><th>Score</th>
+                    </tr>
+                    <tr>
+                        <td>1</td><td id="name1">---</td><td id="score1">0</td>
+                    </tr>
+                    <tr>
+                        <td>2</td><td id="name2">---</td><td id="score2">0000000</td>
+                    </tr>
+                    <tr>
+                        <td>3</td><td id="name3">---</td><td id="score3">0000000</td>
+                    </tr>
+                    <tr>
+                        <td>4</td><td id="name4">---</td><td id="score4">0000000</td>
+                    </tr>
+                    <tr>
+                        <td>5</td><td id="name5">---</td><td id="score5">0000000</td>
+                    </tr>
+                    <tr>
+                        <td>6</td><td id="name6">---</td><td id="score6">0000000</td>
+                    </tr>
+                    <tr>
+                        <td>7</td><td id="name7">---</td><td id="score7">0000000</td>
+                    </tr>
+                    <tr>
+                        <td>8</td><td id="name8">---</td><td id="score8">0000000</td>
+                    </tr>
+                </table>
+                
+                <form>
+                <div class="centre">
+                <input type="button" value="Return" onclick="display_menus(10, -10, -10, -10);" />
+                </div>
+                </form>
+            </div>
+            
+            <div id="pause">
+                <h1>Pause</h1>
+            </div>
+            
+            <div id="gameover">
+                <h1>Game Over</h1>
+                <h2 id="score"></h2>
+                
+                <div id="newhighscore">
+                    <p>You've acheived a new high score.</p>
+                    <form>
+                        <label for="name">Enter name</label>
+                        <input id="name" type="text" size="3" maxlength="3" />
+                        <br />
+                        <input type="button" value="OK" onclick="new_high_score();" />
+                    </form>
+                </div>
+                
+                <div id="nohighscore">
+                    <form>
+                    <div class="centre">
+                    <input type="button" value="OK" onclick="main();" />
+                    </div>
+                    </form>
+                </div>
+            </div>
+            
+        </div>
+
+    </body>
+</html>
