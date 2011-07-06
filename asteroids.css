@@ -15,6 +15,24 @@ canvas {
     -webkit-box-shadow: 0px 0px 10px 10px #777777;
 }
 
+a:link {
+    text-decoration: none;
+    color: #444444;
+}
+
+a:visited {
+    color: #444444;
+}
+
+a:active {
+    color: #999999;
+}
+
+a:hover {
+    color: #111111;
+    text-decoration: underline;
+}
+
 li {
     text-align: left;
 }
