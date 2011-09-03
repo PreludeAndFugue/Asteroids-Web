@@ -305,6 +305,8 @@ Asteroids.prototype.Asteroid = function(x, y, dx, dy, r) {
  * The ship
  ******************************************************************************/
 Asteroids.prototype.Ship = function(game) {
+    // keep a reference to the game
+    this.game = game;
     // position
     this.x = game.WIDTH/2;
     this.y = game.HEIGHT/2;
@@ -315,7 +317,16 @@ Asteroids.prototype.Ship = function(game) {
     this.rotation = -Math.PI/2;
     // direction increment - when user presses buttons, this is how much to
     // change this.rotation for each key press
-    this.rot_inc = 0.2;
+    this.rot_inc = 0.1;
+    // is the ship current firing a bullet
+    this.firing = false;
+    // keep track of when the last bullet was fired
+    this.last_bullet_timer = 10;
+    // is the ship currently moving
+    this.thruster = false;
+    // is the ship rotating
+    this.rotate_left = false;
+    this.rotate_right = false;
 
     // draw the ship using the 2d context object
     this.draw = function(context) {
@@ -336,38 +347,41 @@ Asteroids.prototype.Ship = function(game) {
     };
 
     // rotate the ship
-    this.rotate = function(clockwise) {
-        if (clockwise) {
+    this.rotate = function() {
+        if (!this.rotate_left && this.rotate_right) {
             this.rotation += this.rot_inc;
-        }
-        else {
+        } else if (this.rotate_left && !this.rotate_right) {
             this.rotation -= this.rot_inc;
         }
     };
 
     // fire a bullet
-    this.fire = function(game) {
-        var b = new game.Bullet(this.x, this.y, this.rotation);
-        game.bullets.push(b);
+    this.fire = function() {
+        // increment bullet timer
+        this.last_bullet_timer += 1;
+        if (this.firing && this.last_bullet_timer > 5) {
+            this.last_bullet_timer = 0;
+            var b = new game.Bullet(this.x, this.y, this.rotation);
+            if (this.game.bullets.length < 15) {
+                this.game.bullets.push(b);
+            }
+        }
     };
 
     // create thrust
     this.thrust = function() {
         // only apply thrust if speed is not too high (ie a max speed)
-        if (this.dx < 10 && this.dy < 10) {
-            this.dx += 3*Math.cos(this.rotation);
-            this.dy += 3*Math.sin(this.rotation);
+        if (this.thruster && this.dx < 5 && this.dy < 5) {
+            this.dx += 2*Math.cos(this.rotation);
+            this.dy += 2*Math.sin(this.rotation);
         }
-    };
-
-    // move the ship
-    this.move = function() {
+        
         this.x += this.dx;
         this.y += this.dy;
 
         // deceleration (ship will always slow down when no thrust applied)
-        this.dx *= 0.93;
-        this.dy *= 0.93;
+        this.dx *= 0.90;
+        this.dy *= 0.90;
     };
 
     // check for boundary conditions
@@ -418,8 +432,8 @@ Asteroids.prototype.Ship = function(game) {
  ******************************************************************************/
 Asteroids.prototype.Bullet = function(x, y, rotation) {
     // velocity
-    this.dx = 4*Math.cos(rotation);
-    this.dy = 4*Math.sin(rotation);
+    this.dx = 6*Math.cos(rotation);
+    this.dy = 6*Math.sin(rotation);
     // position - use dx and dy to position the bullet at the front of the ship
     this.x = x + this.dx;
     this.y = y + this.dy;
@@ -503,17 +517,18 @@ Asteroids.prototype.loader = function() {
 
     // add event listeners
     var docel = document.getElementById;
-    window.addEventListener('keydown', function(event) {this_ast.keydown(event);}, false);
+    window.addEventListener('keydown', function(event) {this_ast.keydown(event);});
+    window.addEventListener('keyup', function(event) {this_ast.keyup(event);});
     document.getElementById('highscoretable').addEventListener('click',
-        function() {this_ast.high_scores();}, false);
+        function() {this_ast.high_scores();});
     document.getElementById('startbutton').addEventListener('click',
-        function() {this_ast.go();}, false);
+        function() {this_ast.go();});
     document.getElementById('highscorereturn').addEventListener('click',
-        function() {this_ast.display_menus(10, -10, -10, -10);}, false);
+        function() {this_ast.display_menus(10, -10, -10, -10);});
     document.getElementById('newscorebutton').addEventListener('click',
-        function() {this_ast.new_high_score();}, false);
+        function() {this_ast.new_high_score();});
     document.getElementById('noscorebutton').addEventListener('click',
-        function() {this_ast.main();}, false);
+        function() {this_ast.main();});
 
     this.main();
 };
@@ -665,8 +680,8 @@ Asteroids.prototype.play = function() {
     this.context.fillRect(0, 0, this.WIDTH, this.HEIGHT);
 
     // remove old bullets
-    this.bullets = this.bullets.filter(function(el, ind, arr) {return el.age < 65;});
-    this.bullets_ufo = this.bullets_ufo.filter(function(el, ind, arr) {return el.age < 55;});
+    this.bullets = this.bullets.filter(function(el, ind, arr) {return el.age < 55;});
+    this.bullets_ufo = this.bullets_ufo.filter(function(el, ind, arr) {return el.age < 50;});
 
     // draw bullets
     for (bullet in this.bullets) {
@@ -714,7 +729,9 @@ Asteroids.prototype.play = function() {
     }
 
     // move and draw the ship
-    this.ship.move();
+    this.ship.thrust();
+    this.ship.rotate();
+    this.ship.fire();
     this.ship.boundary(this);
     this.ship.collision(this);
     this.ship.draw(this.context);
@@ -836,19 +853,19 @@ Asteroids.prototype.keydown = function(event) {
     switch (keynum) {
         case 37:
             // left arrow
-            this.ship.rotate(false);
+            this.ship.rotate_left = true;
             break;
         case 39:
             // right arrow
-            this.ship.rotate(true);
+            this.ship.rotate_right = true;
             break;
         case 40:
             // down arrow - fire
-            this.ship.fire(this);
+            this.ship.firing = true;
             break;
         case 38:
             // up arrow - thrust
-            this.ship.thrust();
+            this.ship.thruster = true;
             break;
         case 65:
             // 'a' key - pause
@@ -887,6 +904,30 @@ Asteroids.prototype.keydown = function(event) {
             break;
     }
 };
+
+Asteroids.prototype.keyup = function(event) {
+    //console.log('key up');
+    var keynum = event.which;
+    
+    switch (keynum) {
+        case 37:
+            // left arrow
+            this.ship.rotate_left = false;
+            break;
+        case 39:
+            // right arrow
+            this.ship.rotate_right = false;
+            break;
+        case 40:
+            // down arrow - fire
+            this.ship.firing = false;
+            break;
+        case 38:
+            // up arrow - thrust
+            this.ship.thruster = false;
+            break;
+    }
+}
 
 window.addEventListener(
     'load',
